@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -150,6 +150,10 @@
         <button class="nav-item" id="nav-admin" onclick="showSection('admin')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
           <span>Admin Panel</span>
+        </button>
+        <button class="nav-item" id="nav-linkchecker" onclick="showSection('linkchecker')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/><line x1="12" y1="5" x2="12" y2="2"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
+          <span>Link Checker</span>
         </button>
         <button class="nav-item" id="nav-profile" onclick="showSection('profile')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -451,6 +455,101 @@
 
           </div>
         </div>
+      </section>
+
+      <!-- ── Link Safety Checker Section ── -->
+      <section id="section-linkchecker" class="content-section">
+
+        <!-- Checker Card -->
+        <div class="section-card lsc-checker-card">
+          <div class="lsc-header">
+            <div class="lsc-header-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+            </div>
+            <div>
+              <h3>Link Safety Checker</h3>
+              <p class="lsc-subtitle">Paste any URL to instantly analyze its safety and security score.</p>
+            </div>
+          </div>
+
+          <form id="lsc-form" onsubmit="handleLinkCheck(event)" class="lsc-form">
+            <div class="lsc-input-row">
+              <div class="input-wrap lsc-input-wrap">
+                <span class="input-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                </span>
+                <input type="text" id="lsc-url-input" placeholder="https://example.com/page?ref=source" autocomplete="off" />
+              </div>
+              <button type="submit" class="btn-primary lsc-submit-btn" id="lsc-submit-btn">
+                <span class="btn-text">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;display:inline-block;vertical-align:middle;margin-right:5px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  Check Safety
+                </span>
+                <span class="btn-loader hidden"></span>
+              </button>
+            </div>
+            <div id="lsc-error" class="form-error hidden" style="margin-top:.75rem"></div>
+          </form>
+
+          <!-- Loading Indicator -->
+          <div id="lsc-loading" class="lsc-loading hidden">
+            <div class="lsc-spinner"></div>
+            <span>Analyzing URL security…</span>
+          </div>
+
+          <!-- Result Card -->
+          <div id="lsc-result" class="lsc-result hidden">
+            <div class="lsc-result-header">
+              <div class="lsc-result-status-wrap">
+                <span id="lsc-status-badge" class="lsc-badge">Safe</span>
+                <span id="lsc-risk-badge" class="lsc-risk-badge">Low Risk</span>
+              </div>
+              <div class="lsc-result-url" id="lsc-result-url"></div>
+            </div>
+
+            <div class="lsc-score-section">
+              <div class="lsc-score-labels">
+                <span class="lsc-score-title">Security Score</span>
+                <span id="lsc-score-value" class="lsc-score-number">100</span>
+              </div>
+              <div class="lsc-progress-track">
+                <div id="lsc-progress-bar" class="lsc-progress-fill" style="width:0%"></div>
+              </div>
+            </div>
+
+            <div class="lsc-details-grid">
+              <div class="lsc-detail-item">
+                <span class="lsc-detail-label">Reason</span>
+                <p id="lsc-reason" class="lsc-detail-value"></p>
+              </div>
+              <div class="lsc-detail-item">
+                <span class="lsc-detail-label">Recommendation</span>
+                <p id="lsc-recommendation" class="lsc-detail-value lsc-rec-value"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- History Card -->
+        <div class="section-card" style="margin-top:1.5rem">
+          <div class="card-header">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:6px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Check History
+            </h3>
+            <button class="btn-sm" id="lsc-refresh-btn" onclick="loadLinkHistory()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Refresh
+            </button>
+          </div>
+          <div id="lsc-history-wrap" class="lsc-history-wrap">
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              <p>No links checked yet. Paste a URL above to get started!</p>
+            </div>
+          </div>
+        </div>
+
       </section>
 
     </main>
