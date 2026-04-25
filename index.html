@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DAPS – Digital Asset Protection System</title>
+  <meta name="description" content="Protect, manage and monitor your digital assets with our secure platform powered by AI-driven detection and real-time flagging." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- Supabase CDN – no Node.js needed -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="dark" id="app-body">
+
+  <!-- ═══════════════════════════ AUTH SCREEN ═══════════════════════════ -->
+  <div id="auth-screen" class="screen active">
+    <div class="auth-bg">
+      <div class="auth-orb auth-orb-1"></div>
+      <div class="auth-orb auth-orb-2"></div>
+      <div class="auth-orb auth-orb-3"></div>
+    </div>
+
+    <div class="auth-container">
+      <!-- Brand -->
+      <div class="auth-brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M24 4L6 12V24C6 34.5 14.1 44.3 24 47C33.9 44.3 42 34.5 42 24V12L24 4Z" fill="url(#shieldGrad)" />
+            <path d="M18 24L22 28L30 20" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <defs>
+              <linearGradient id="shieldGrad" x1="6" y1="4" x2="42" y2="47" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#6366f1"/><stop offset="1" stop-color="#a855f7"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>DAPS</h1>
+          <span>Digital Asset Protection System</span>
+        </div>
+      </div>
+
+      <!-- Auth Card -->
+      <div class="auth-card" id="auth-card">
+        <div class="auth-tabs">
+          <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+          <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
+          <div class="tab-indicator" id="tab-indicator"></div>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="auth-form active" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label for="login-email">Email Address</label>
+            <div class="input-wrap">
+              <span class="input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              </span>
+              <input type="email" id="login-email" placeholder="you@example.com" required autocomplete="email" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <div class="input-wrap">
+              <span class="input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </span>
+              <input type="password" id="login-password" placeholder="••••••••" required />
+              <button type="button" class="toggle-pw" onclick="togglePassword('login-password')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <div id="login-error" class="form-error hidden"></div>
+          <button type="submit" class="btn-primary" id="login-btn">
+            <span class="btn-text">Sign In</span>
+            <span class="btn-loader hidden"></span>
+          </button>
+        </form>
+
+        <!-- Signup Form -->
+        <form id="signup-form" class="auth-form" onsubmit="handleSignup(event)">
+          <div class="form-group">
+            <label for="signup-name">Full Name</label>
+            <div class="input-wrap">
+              <span class="input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </span>
+              <input type="text" id="signup-name" placeholder="John Doe" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="signup-email">Email Address</label>
+            <div class="input-wrap">
+              <span class="input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              </span>
+              <input type="email" id="signup-email" placeholder="you@example.com" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="signup-password">Password</label>
+            <div class="input-wrap">
+              <span class="input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </span>
+              <input type="password" id="signup-password" placeholder="Min. 6 characters" required />
+              <button type="button" class="toggle-pw" onclick="togglePassword('signup-password')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <div id="signup-error" class="form-error hidden"></div>
+          <button type="submit" class="btn-primary" id="signup-btn">
+            <span class="btn-text">Create Account</span>
+            <span class="btn-loader hidden"></span>
+          </button>
+        </form>
+      </div>
+
+      <p class="auth-footer">🔒 Secured by Supabase Auth &amp; 256-bit encryption</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ DASHBOARD SCREEN ═══════════════════════════ -->
+  <div id="dashboard-screen" class="screen">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon-sm">
+          <svg viewBox="0 0 48 48" fill="none"><path d="M24 4L6 12V24C6 34.5 14.1 44.3 24 47C33.9 44.3 42 34.5 42 24V12L24 4Z" fill="url(#sg2)"/><path d="M18 24L22 28L30 20" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="sg2" x1="6" y1="4" x2="42" y2="47" gradientUnits="userSpaceOnUse"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#a855f7"/></linearGradient></defs></svg>
+        </div>
+        <span>DAPS</span>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" id="nav-overview" onclick="showSection('overview')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          <span>Overview</span>
+        </button>
+        <button class="nav-item" id="nav-media" onclick="showSection('media')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="m10 8 6 4-6 4V8z"/></svg>
+          <span>My Assets</span>
+        </button>
+        <button class="nav-item" id="nav-upload" onclick="showSection('upload')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>Upload Asset</span>
+        </button>
+        <button class="nav-item" id="nav-admin" onclick="showSection('admin')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+          <span>Admin Panel</span>
+        </button>
+        <button class="nav-item" id="nav-profile" onclick="showSection('profile')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>My Profile</span>
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">
+          <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+          <span id="theme-label">Light Mode</span>
+        </button>
+        <button class="logout-btn" onclick="handleLogout()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Logout</span>
+        </button>
+      </div>
+    </aside>
+
+    <button class="mobile-menu-btn" id="mobile-menu-btn" onclick="toggleSidebar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="topbar">
+        <div class="topbar-left"><h2 id="section-title">Overview</h2></div>
+        <div class="topbar-right">
+          <div class="user-avatar topbar-avatar-btn" id="user-avatar-display" onclick="showSection('profile')" title="Edit Profile" style="cursor:pointer">U</div>
+          <div class="user-info-top">
+            <span id="topbar-username">Loading...</span>
+            <span id="topbar-email" class="topbar-email">Loading...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overview -->
+      <section id="section-overview" class="content-section active">
+        <div class="stats-grid">
+          <div class="stat-card" data-color="purple">
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="m10 8 6 4-6 4V8z"/></svg></div>
+            <div class="stat-info"><span class="stat-label">Total Assets</span><span class="stat-value" id="stat-total">—</span></div>
+          </div>
+          <div class="stat-card" data-color="green">
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+            <div class="stat-info"><span class="stat-label">Safe Assets</span><span class="stat-value" id="stat-safe">—</span></div>
+          </div>
+          <div class="stat-card" data-color="red">
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+            <div class="stat-info"><span class="stat-label">Flagged</span><span class="stat-value" id="stat-flagged">—</span></div>
+          </div>
+          <div class="stat-card" data-color="blue">
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <div class="stat-info"><span class="stat-label">Protection Rate</span><span class="stat-value" id="stat-rate">—</span></div>
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="card-header"><h3>Recent Activity</h3><button class="btn-sm" onclick="showSection('media')">View All</button></div>
+          <div id="recent-activity-list" class="activity-list">
+            <div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="m10 8 6 4-6 4V8z"/></svg><p>No assets yet. Upload your first asset!</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- My Assets -->
+      <section id="section-media" class="content-section">
+        <div class="section-card">
+          <div class="card-header">
+            <h3>My Digital Assets</h3>
+            <div class="header-controls">
+              <div class="search-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="media-search" placeholder="Search assets…" oninput="filterMedia()" />
+              </div>
+              <select id="media-filter" onchange="filterMedia()">
+                <option value="all">All Status</option>
+                <option value="safe">Safe</option>
+                <option value="flagged">Flagged</option>
+              </select>
+            </div>
+          </div>
+          <div id="media-grid" class="media-grid">
+            <div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><p>No assets found.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Upload -->
+      <section id="section-upload" class="content-section">
+        <div class="upload-layout">
+          <div class="section-card upload-card">
+            <div class="card-header"><h3>Upload Digital Asset</h3></div>
+            <form id="upload-form" onsubmit="handleUpload(event)">
+              <div class="form-group">
+                <label for="upload-title">Asset Title</label>
+                <div class="input-wrap">
+                  <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>
+                  <input type="text" id="upload-title" placeholder="e.g. Championship Highlight Reel" required />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="upload-url">Media URL</label>
+                <div class="input-wrap">
+                  <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
+                  <input type="url" id="upload-url" placeholder="https://example.com/media.mp4" required />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="upload-desc">Description (optional)</label>
+                <textarea id="upload-desc" placeholder="Describe this asset…" rows="3"></textarea>
+              </div>
+              <div id="upload-error" class="form-error hidden"></div>
+              <div id="upload-success" class="form-success hidden"></div>
+              <button type="submit" class="btn-primary" id="upload-btn">
+                <span class="btn-text">Upload Asset</span>
+                <span class="btn-loader hidden"></span>
+              </button>
+            </form>
+          </div>
+          <div class="upload-tips-card section-card">
+            <h3>Upload Guidelines</h3>
+            <ul class="tips-list">
+              <li><span class="tip-icon green">✓</span> Provide a direct link to your media</li>
+              <li><span class="tip-icon green">✓</span> Supported: images, videos, audio, docs</li>
+              <li><span class="tip-icon green">✓</span> URL must start with https://</li>
+              <li><span class="tip-icon red">✗</span> No private or sensitive content</li>
+              <li><span class="tip-icon red">✗</span> No copyrighted material without rights</li>
+            </ul>
+            <div class="status-legend">
+              <h4>Status Indicators</h4>
+              <div class="legend-item"><span class="badge safe">SAFE</span> Content is verified &amp; protected</div>
+              <div class="legend-item"><span class="badge flagged">FLAGGED</span> Content flagged for review</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Admin -->
+      <section id="section-admin" class="content-section">
+        <div class="admin-stats-row">
+          <div class="mini-stat"><span id="admin-media">—</span><label>Total Assets</label></div>
+          <div class="mini-stat"><span id="admin-flags">—</span><label>Total Flags</label></div>
+          <div class="mini-stat"><span id="admin-safe">—</span><label>Safe Assets</label></div>
+        </div>
+        <div class="section-card">
+          <div class="card-header">
+            <h3>All Media Assets</h3>
+            <button class="btn-sm" onclick="loadAdminData()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Refresh
+            </button>
+          </div>
+          <div id="admin-media-list" class="admin-table-wrap"><div class="empty-state">Loading…</div></div>
+        </div>
+        <div class="section-card" style="margin-top:1.5rem">
+          <div class="card-header"><h3>Flag Reports</h3></div>
+          <div id="admin-flags-list" class="admin-table-wrap"><div class="empty-state">Loading…</div></div>
+        </div>
+      </section>
+
+      <!-- ── Profile Section ── -->
+      <section id="section-profile" class="content-section">
+        <div class="profile-layout">
+
+          <!-- Left: Avatar Card -->
+          <div class="profile-avatar-card section-card">
+            <div class="profile-avatar-wrap">
+              <div class="profile-avatar-lg" id="profile-avatar-lg">A</div>
+              <div class="profile-avatar-ring" id="profile-avatar-ring"></div>
+            </div>
+            <h3 id="profile-display-name">Your Name</h3>
+            <p id="profile-display-email" class="profile-email-text">email@example.com</p>
+            <div class="profile-badge-row">
+              <span class="badge safe" id="profile-assets-badge">0 Assets</span>
+              <span class="badge flagged" id="profile-flagged-badge">0 Flagged</span>
+            </div>
+            <div class="color-picker-section">
+              <label>Avatar Color</label>
+              <div class="color-swatches" id="color-swatches">
+                <button class="swatch active" data-color="#6366f1" style="background:#6366f1" onclick="selectAvatarColor(this,'#6366f1')"></button>
+                <button class="swatch" data-color="#a855f7" style="background:#a855f7" onclick="selectAvatarColor(this,'#a855f7')"></button>
+                <button class="swatch" data-color="#ec4899" style="background:#ec4899" onclick="selectAvatarColor(this,'#ec4899')"></button>
+                <button class="swatch" data-color="#ef4444" style="background:#ef4444" onclick="selectAvatarColor(this,'#ef4444')"></button>
+                <button class="swatch" data-color="#f59e0b" style="background:#f59e0b" onclick="selectAvatarColor(this,'#f59e0b')"></button>
+                <button class="swatch" data-color="#22c55e" style="background:#22c55e" onclick="selectAvatarColor(this,'#22c55e')"></button>
+                <button class="swatch" data-color="#3b82f6" style="background:#3b82f6" onclick="selectAvatarColor(this,'#3b82f6')"></button>
+                <button class="swatch" data-color="#14b8a6" style="background:#14b8a6" onclick="selectAvatarColor(this,'#14b8a6')"></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Edit Forms -->
+          <div class="profile-forms">
+
+            <!-- Personal Info -->
+            <div class="section-card">
+              <div class="card-header">
+                <h3>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:6px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  Personal Information
+                </h3>
+              </div>
+              <form id="profile-info-form" onsubmit="saveProfileInfo(event)">
+                <div class="profile-fields-grid">
+                  <div class="form-group">
+                    <label for="pf-name">Full Name</label>
+                    <div class="input-wrap">
+                      <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                      <input type="text" id="pf-name" placeholder="John Doe" />
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="pf-mobile">Mobile Number</label>
+                    <div class="input-wrap">
+                      <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></span>
+                      <input type="tel" id="pf-mobile" placeholder="+91 98765 43210" />
+                    </div>
+                  </div>
+                  <div class="form-group" style="grid-column:1/-1">
+                    <label for="pf-email">Email Address <span class="field-note">(read-only)</span></label>
+                    <div class="input-wrap">
+                      <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span>
+                      <input type="email" id="pf-email" disabled style="opacity:.5;cursor:not-allowed" />
+                    </div>
+                  </div>
+                  <div class="form-group" style="grid-column:1/-1">
+                    <label for="pf-bio">Bio / About</label>
+                    <textarea id="pf-bio" rows="3" placeholder="Tell us a bit about yourself…"></textarea>
+                  </div>
+                </div>
+                <div id="profile-info-error" class="form-error hidden"></div>
+                <div id="profile-info-success" class="form-success hidden"></div>
+                <button type="submit" class="btn-primary" id="profile-info-btn" style="max-width:220px;margin-top:0.5rem">
+                  <span class="btn-text">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;display:inline-block;vertical-align:middle;margin-right:5px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Save Changes
+                  </span>
+                  <span class="btn-loader hidden"></span>
+                </button>
+              </form>
+            </div>
+
+            <!-- Change Password -->
+            <div class="section-card" style="margin-top:1.5rem">
+              <div class="card-header">
+                <h3>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:6px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  Change Password
+                </h3>
+              </div>
+              <form id="profile-pw-form" onsubmit="saveNewPassword(event)">
+                <div class="profile-fields-grid">
+                  <div class="form-group">
+                    <label for="pf-new-pw">New Password</label>
+                    <div class="input-wrap">
+                      <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+                      <input type="password" id="pf-new-pw" placeholder="Min. 6 characters" />
+                      <button type="button" class="toggle-pw" onclick="togglePassword('pf-new-pw')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="pf-confirm-pw">Confirm Password</label>
+                    <div class="input-wrap">
+                      <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+                      <input type="password" id="pf-confirm-pw" placeholder="Re-enter password" />
+                      <button type="button" class="toggle-pw" onclick="togglePassword('pf-confirm-pw')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div id="profile-pw-error" class="form-error hidden"></div>
+                <div id="profile-pw-success" class="form-success hidden"></div>
+                <button type="submit" class="btn-primary" id="profile-pw-btn" style="max-width:220px;margin-top:0.5rem">
+                  <span class="btn-text">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;display:inline-block;vertical-align:middle;margin-right:5px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Update Password
+                  </span>
+                  <span class="btn-loader hidden"></span>
+                </button>
+              </form>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="section-card danger-card" style="margin-top:1.5rem">
+              <div class="card-header">
+                <h3 style="color:var(--red)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:6px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  Danger Zone
+                </h3>
+              </div>
+              <p style="font-size:.88rem;color:var(--text2);margin-bottom:1rem">Signing out will end your current session on this device.</p>
+              <button class="btn-danger" onclick="handleLogout()" style="max-width:180px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sign Out
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Flag Modal -->
+  <div id="flag-modal" class="modal-overlay" onclick="closeFlagModal(event)">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-header">
+        <div class="modal-icon warning">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <h2 id="modal-title">Flag Unauthorized Content</h2>
+        <button class="modal-close" onclick="closeFlagModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Provide a clear reason why this content should be flagged for review.</p>
+        <div class="form-group" style="margin-top:1rem">
+          <label for="flag-reason">Reason</label>
+          <div class="reason-presets">
+            <button type="button" class="preset-chip" onclick="selectPreset(this,'Unauthorized use of copyrighted material')">Copyright Violation</button>
+            <button type="button" class="preset-chip" onclick="selectPreset(this,'Inappropriate or harmful content')">Inappropriate Content</button>
+            <button type="button" class="preset-chip" onclick="selectPreset(this,'Trademark infringement')">Trademark Abuse</button>
+            <button type="button" class="preset-chip" onclick="selectPreset(this,'Suspected content theft')">Content Theft</button>
+          </div>
+          <textarea id="flag-reason" rows="3" placeholder="Describe why this content should be flagged…" style="margin-top:0.75rem"></textarea>
+        </div>
+        <div id="flag-error" class="form-error hidden"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeFlagModal()">Cancel</button>
+        <button class="btn-danger" id="flag-submit-btn" onclick="submitFlag()">
+          <span class="btn-text">Submit Flag</span>
+          <span class="btn-loader hidden"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
