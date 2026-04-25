@@ -1,4 +1,4 @@
-// ─── Supabase Config (Direct – No Node.js needed) ────────────────────────────
+ // ─── Supabase Config (Direct – No Node.js needed) ────────────────────────────
 const SUPABASE_URL = 'https://xdhjiifaqsnpclsnylmp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaGppaWZhcXNucGNsc255bG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5NTIzOTgsImV4cCI6MjA5MjUyODM5OH0.4AnCrSDcMARSYBNOg5BOeGS4I92pTNsUiiH0yzSbjdk';
 
@@ -160,10 +160,14 @@ function showSection(name) {
   const nav = document.getElementById('nav-' + name);
   if (section) section.classList.add('active');
   if (nav) nav.classList.add('active');
-  const titles = { overview: 'Overview', media: 'My Assets', upload: 'Upload Asset', admin: 'Admin Panel', profile: 'My Profile' };
+  const titles = {
+    overview: 'Overview', media: 'My Assets', upload: 'Upload Asset',
+    admin: 'Admin Panel', profile: 'My Profile', linkchecker: 'Link Checker'
+  };
   document.getElementById('section-title').textContent = titles[name] || name;
   if (name === 'admin') loadAdminData();
   if (name === 'profile') loadProfile();
+  if (name === 'linkchecker') loadLinkHistory();
   closeSidebar();
 }
 
@@ -657,7 +661,6 @@ function selectAvatarColor(btn, color) {
   document.getElementById('profile-avatar-ring').style.background = `conic-gradient(${color}, ${shiftColor(color)}, ${color})`;
 }
 
-// Generate a secondary shade for gradients
 function shiftColor(hex) {
   const map = {
     '#6366f1': '#a855f7', '#a855f7': '#ec4899', '#ec4899': '#f43f5e',
@@ -666,3 +669,291 @@ function shiftColor(hex) {
   };
   return map[hex] || '#a855f7';
 }
+
+// ─── Link Safety Checker (fully frontend — no backend needed) ─────────────────
+
+/**
+ * Pure client-side URL security analyzer.
+ * Returns { status, score, risk_level, reason, recommendation }
+ */
+function analyzeUrlClient(rawUrl) {
+  let parsed;
+  const flags = [];
+  let deductions = 0;
+
+  // 1. Basic URL parse
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return {
+      status: 'Harmful', score: 0, risk_level: 'High',
+      reason: 'The URL is malformed and cannot be parsed as a valid web address.',
+      recommendation: 'Avoid'
+    };
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+
+  // 2. HTTPS check
+  if (parsed.protocol !== 'https:') {
+    flags.push('Does not use HTTPS (insecure connection)');
+    deductions += 25;
+  }
+
+  // 3. Double-slashes in path
+  if (parsed.pathname.includes('//')) {
+    flags.push('Contains double slashes in path — common in redirect attacks');
+    deductions += 20;
+  }
+
+  // 4. @ symbol (credential embedding)
+  if (rawUrl.includes('@')) {
+    flags.push('Contains @ symbol — may be hiding the real destination');
+    deductions += 30;
+  }
+
+  // 5. Excessively long URL
+  if (rawUrl.length > 200) {
+    flags.push(`Unusually long URL (${rawUrl.length} chars) — common in phishing links`);
+    deductions += 15;
+  }
+
+  // 6. IP address as hostname
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) {
+    flags.push('Uses a raw IP address instead of a domain name');
+    deductions += 25;
+  }
+
+  // 7. Excessive subdomains
+  const domainParts = hostname.split('.').filter(Boolean);
+  if (domainParts.length > 4) {
+    flags.push('Excessive subdomain depth — may disguise the real domain');
+    deductions += 15;
+  }
+
+  // 8. Suspicious TLDs
+  const badTlds = ['.tk','.ml','.ga','.cf','.gq','.xyz','.top','.click','.link','.work','.loan'];
+  if (badTlds.some(t => hostname.endsWith(t))) {
+    flags.push('Uses a high-risk free TLD commonly associated with phishing');
+    deductions += 20;
+  }
+
+  // 9. Phishing keywords
+  const keywords = ['login','signin','verify','secure','account','update','confirm','banking','paypal','apple','amazon','microsoft','google','facebook'];
+  const pathHost = (hostname + parsed.pathname).toLowerCase();
+  const found = keywords.filter(k => pathHost.includes(k));
+  if (found.length > 0) {
+    flags.push(`Contains suspicious keywords: "${found.join('", "')}"`);
+    deductions += Math.min(found.length * 10, 25);
+  }
+
+  // 10. Punycode domain
+  if (hostname.startsWith('xn--')) {
+    flags.push('Uses a Punycode domain — check for lookalike characters');
+    deductions += 20;
+  }
+
+  // 11. Excessive query params
+  const paramCount = [...parsed.searchParams].length;
+  if (paramCount > 6) {
+    flags.push(`Contains ${paramCount} query parameters — unusually high`);
+    deductions += 10;
+  }
+
+  // 12. URL shorteners
+  const shorteners = ['bit.ly','tinyurl.com','t.co','goo.gl','ow.ly','short.link','is.gd','cli.gs','tiny.cc'];
+  if (shorteners.includes(hostname)) {
+    flags.push('Uses a URL shortener — the real destination is hidden');
+    deductions += 15;
+  }
+
+  const score = Math.max(0, 100 - deductions);
+  let status, risk_level, recommendation;
+  if (score >= 75)      { status = 'Safe';       risk_level = 'Low';    recommendation = 'Safe to use'; }
+  else if (score >= 45) { status = 'Suspicious'; risk_level = 'Medium'; recommendation = 'Be careful'; }
+  else                  { status = 'Harmful';    risk_level = 'High';   recommendation = 'Avoid'; }
+
+  const reason = flags.length > 0
+    ? flags.join('. ') + '.'
+    : 'No suspicious patterns detected. The URL appears legitimate.';
+
+  return { status, score, risk_level, reason, recommendation };
+}
+
+/**
+ * Handles form submission: analyzes URL in the browser,
+ * saves to Supabase directly (no backend fetch needed).
+ */
+async function handleLinkCheck(e) {
+  e.preventDefault();
+  const urlInput = document.getElementById('lsc-url-input');
+  const errEl    = document.getElementById('lsc-error');
+  const loading  = document.getElementById('lsc-loading');
+  const resultEl = document.getElementById('lsc-result');
+  const btn      = document.getElementById('lsc-submit-btn');
+
+  const url = urlInput.value.trim();
+  errEl.classList.add('hidden');
+  resultEl.classList.add('hidden');
+
+  if (!url) {
+    errEl.textContent = 'Please enter a URL to check.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  setLoading(btn, true);
+  loading.classList.remove('hidden');
+
+  try {
+    // Run analysis entirely in the browser — no fetch needed
+    const result = analyzeUrlClient(url);
+
+    // Save to Supabase directly (same pattern as handleUpload)
+    if (currentUser) {
+      const { error: dbErr } = await db.from('link_checks').insert([{
+        user_id:        currentUser.id,
+        url:            url,
+        status:         result.status,
+        score:          result.score,
+        risk_level:     result.risk_level,
+        reason:         result.reason,
+        recommendation: result.recommendation
+      }]);
+      if (dbErr) console.warn('History save skipped:', dbErr.message);
+    }
+
+    renderLinkResult({ url, ...result });
+    prependToHistory({ url, ...result }, url);
+    showToast('Link analyzed successfully!', 'success');
+  } catch (err) {
+    errEl.textContent = '⚠ ' + (err.message || 'Analysis failed. Please try again.');
+    errEl.classList.remove('hidden');
+    showToast('Analysis failed.', 'error');
+  } finally {
+    setLoading(btn, false);
+    loading.classList.add('hidden');
+  }
+}
+
+/**
+ * Renders the analysis result card.
+ */
+function renderLinkResult(data) {
+  const statusKey = (data.status || '').toLowerCase();
+  const riskKey   = (data.risk_level || '').toLowerCase();
+
+  let scoreColor;
+  if (data.score >= 75)      scoreColor = '#22c55e';
+  else if (data.score >= 45) scoreColor = '#f59e0b';
+  else                        scoreColor = '#ef4444';
+
+  const badge = document.getElementById('lsc-status-badge');
+  badge.textContent = data.status;
+  badge.className   = 'lsc-badge ' + statusKey;
+
+  const riskBadge = document.getElementById('lsc-risk-badge');
+  riskBadge.textContent = data.risk_level + ' Risk';
+  riskBadge.className   = 'lsc-risk-badge ' + riskKey;
+
+  document.getElementById('lsc-result-url').textContent = data.url;
+  document.getElementById('lsc-score-value').textContent = data.score;
+  document.getElementById('lsc-score-value').style.color = scoreColor;
+  document.getElementById('lsc-reason').textContent = data.reason;
+  document.getElementById('lsc-recommendation').textContent = data.recommendation;
+  document.getElementById('lsc-recommendation').style.color = scoreColor;
+
+  const bar = document.getElementById('lsc-progress-bar');
+  bar.style.width = '0%';
+  bar.style.background = scoreColor;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    bar.style.width = data.score + '%';
+  }));
+
+  document.getElementById('lsc-result').classList.remove('hidden');
+}
+
+/**
+ * Loads history directly from Supabase — no backend needed.
+ */
+async function loadLinkHistory() {
+  const wrap = document.getElementById('lsc-history-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="empty-state"><div class="lsc-spinner" style="margin:0 auto"></div></div>';
+
+  if (!currentUser) {
+    wrap.innerHTML = '<div class="empty-state"><p>Sign in to view your history.</p></div>';
+    return;
+  }
+
+  try {
+    const { data, error } = await db
+      .from('link_checks')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('checked_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+    renderHistoryTable(data || []);
+  } catch (err) {
+    wrap.innerHTML = `<div class="empty-state"><p style="color:var(--red)">${escHtml(err.message)}</p></div>`;
+  }
+}
+
+/**
+ * Renders the history table rows.
+ */
+function renderHistoryTable(rows) {
+  const wrap = document.getElementById('lsc-history-wrap');
+  if (!rows || rows.length === 0) {
+    wrap.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      <p>No links checked yet. Paste a URL above to get started!</p>
+    </div>`;
+    return;
+  }
+
+  const rows_html = rows.map(r => {
+    const sk = (r.status || '').toLowerCase();
+    let scoreColor;
+    if (r.score >= 75)      scoreColor = '#22c55e';
+    else if (r.score >= 45) scoreColor = '#f59e0b';
+    else                     scoreColor = '#ef4444';
+    return `<tr>
+      <td class="lsc-hist-url" title="${escHtml(r.url)}">${escHtml(r.url)}</td>
+      <td><span class="lsc-badge ${sk}">${escHtml(r.status)}</span></td>
+      <td><span style="font-weight:800;color:${scoreColor}">${r.score}</span><span style="color:var(--text2);font-size:.78rem">/100</span></td>
+      <td class="lsc-hist-date">${formatDate(r.checked_at)}</td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table class="lsc-history-table">
+    <thead><tr><th>URL</th><th>Status</th><th>Score</th><th>Checked</th></tr></thead>
+    <tbody>${rows_html}</tbody>
+  </table>`;
+}
+
+/**
+ * Prepends a just-checked row to the history table instantly.
+ */
+function prependToHistory(data, url) {
+  const tbody = document.querySelector('.lsc-history-table tbody');
+  if (!tbody) { loadLinkHistory(); return; }
+
+  const sk = (data.status || '').toLowerCase();
+  let scoreColor;
+  if (data.score >= 75)      scoreColor = '#22c55e';
+  else if (data.score >= 45) scoreColor = '#f59e0b';
+  else                        scoreColor = '#ef4444';
+
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="lsc-hist-url" title="${escHtml(url)}">${escHtml(url)}</td>
+    <td><span class="lsc-badge ${sk}">${escHtml(data.status)}</span></td>
+    <td><span style="font-weight:800;color:${scoreColor}">${data.score}</span><span style="color:var(--text2);font-size:.78rem">/100</span></td>
+    <td class="lsc-hist-date">Just now</td>
+  `;
+  tbody.insertBefore(tr, tbody.firstChild);
+}
+
